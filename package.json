@@ -1,0 +1,36 @@
+{
+  "name": "botto-smart-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for BOTTO: The first decentralized autonomous artist",
+  "homepage": "https://github.com/bottoproject/smart-contracts",
+  "repository": {
+    "url": "https://github.com/bottoproject/smart-contracts.git",
+    "type": "git"
+  },
+  "author": "BOTTO",
+  "license": "MIT",
+  "devDependencies": {
+    "@openzeppelin/contracts": "^3.4.0",
+    "@openzeppelin/contracts-upgradeable": "^3.4.0",
+    "@openzeppelin/test-helpers": "^0.5.10",
+    "@openzeppelin/truffle-upgrades": "^1.5.0",
+    "@truffle/contract": "^4.3.7",
+    "@truffle/hdwallet-provider": "^1.2.2",
+    "@uniswap/lib": "^4.0.1-alpha",
+    "@uniswap/sdk": "^3.0.3",
+    "@uniswap/v2-core": "^1.0.1",
+    "@uniswap/v2-periphery": "^1.1.0-beta.0",
+    "dotenv": "^8.2.0",
+    "eslint": "^7.20.0",
+    "ethers": "^5.0.31",
+    "merkle-tree-solidity": "^1.0.8",
+    "moment": "^2.29.1",
+    "prettier": "2.4.1",
+    "truffle": "^5.1.49",
+    "truffle-plugin-verify": "^0.5.15"
+  },
+  "engines": {
+    "node": "14.15.4"
+  },
+  "dependencies": {}
+}
