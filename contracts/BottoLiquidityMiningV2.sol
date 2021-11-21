@@ -15,6 +15,10 @@ contract BottoLiquidityMiningV2 is BottoLiquidityMining {
 
     function updateEndTime(uint256 _endTime) public virtual update onlyOwner nonReentrant {
         require(
+            firstStakeTime != 0,
+            "LiquidityMining::updateEndTime: firstStakeTime has not been set"
+        );
+        require(
             block.timestamp < endTime,
             "LiquidityMining::updateEndTime: endTime has passed"
         );
