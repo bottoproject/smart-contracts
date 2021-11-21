@@ -10,7 +10,7 @@ contract BottoLiquidityMiningV2 is BottoLiquidityMining {
     uint256 internal totalDueRewards;
 
     function totalDepositRewards() public view virtual returns (uint256) {
-        return totalRewards.add(_totalDueRewards);
+        return totalRewards.add(totalDueRewards);
     }
 
     function updateEndTime(uint256 _endTime) public virtual update onlyOwner nonReentrant {
@@ -29,7 +29,7 @@ contract BottoLiquidityMiningV2 is BottoLiquidityMining {
         uint256 dueRewards = sinceFirstStakeTime.mul(perSecondReward);
 
         totalRewards = totalRewards.sub(dueRewards);
-        _totalDueRewards = _totalDueRewards.add(dueRewards);
+        totalDueRewards = totalDueRewards.add(dueRewards);
         endTime = _endTime;
         if (totalStakers > 0) {
             firstStakeTime = block.timestamp;
