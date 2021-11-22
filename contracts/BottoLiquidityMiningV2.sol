@@ -15,27 +15,27 @@ contract BottoLiquidityMiningV2 is BottoLiquidityMining {
 
     function updateEndTime(uint256 _endTime) public virtual update onlyOwner nonReentrant {
         require(
-            firstStakeTime != 0,
-            "LiquidityMining::updateEndTime: firstStakeTime has not been set"
-        );
-        require(
             block.timestamp < endTime,
-            "LiquidityMining::updateEndTime: endTime has passed"
+            "LiquidityMining::updateEndTime: staking is over"
         );
         require(
             block.timestamp < _endTime,
             "LiquidityMining::updateEndTime: new end time must be in future"
         );
-        uint256 perSecondReward = totalRewards.div(
-            endTime.sub(firstStakeTime)
-        );
-        uint256 sinceFirstStakeTime = block.timestamp.sub(firstStakeTime);
-        uint256 dueRewards = sinceFirstStakeTime.mul(perSecondReward);
 
-        totalRewards = totalRewards.sub(dueRewards);
-        totalDueRewards = totalDueRewards.add(dueRewards);
+        if (firstStakeTime != 0) {
+          uint256 perSecondReward = totalRewards.div(
+              endTime.sub(firstStakeTime)
+          );
+          uint256 sinceFirstStakeTime = block.timestamp.sub(firstStakeTime);
+          uint256 dueRewards = sinceFirstStakeTime.mul(perSecondReward);
+
+          totalRewards = totalRewards.sub(dueRewards);
+          totalDueRewards = totalDueRewards.add(dueRewards);
+        }
+
         endTime = _endTime;
-        if (totalStakers > 0) {
+        if (totalStake() > 0) {
             firstStakeTime = block.timestamp;
         } else {
             firstStakeTime = 0;
