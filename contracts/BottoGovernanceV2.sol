@@ -21,12 +21,14 @@ contract BottoGovernanceV2 is BottoGovernance, ReentrancyGuardUpgradeable {
     mapping(address => uint256) private _userWeighted;
     mapping(address => uint256) private _userAccumulated;
 
+    uint256 private _perSecondReward;
+
     event Deposit(uint256 totalRewards, uint256 startTime, uint256 endTime);
     event Payout(address indexed staker, uint256 reward);
 
     /// @param _botto ERC20 contract address of BOTTO token
     /// @dev BOTTO token contract address is initialized
-    function init(address _botto) public virtual initializer {
+    function init(address _botto) external virtual initializer {
         BottoGovernance.initialize(_botto);
         __ReentrancyGuard_init();
     }
@@ -35,7 +37,7 @@ contract BottoGovernanceV2 is BottoGovernance, ReentrancyGuardUpgradeable {
         uint256 _totalRewards,
         uint256 _startTime,
         uint256 _endTime
-    ) public virtual onlyOwner {
+    ) external virtual onlyOwner {
         require(
             startRewardsTime == 0,
             "Governance::deposit: already received deposit"
@@ -68,10 +70,8 @@ contract BottoGovernanceV2 is BottoGovernance, ReentrancyGuardUpgradeable {
             _mostRecentValueCalcTime = firstStakeRewardsTime;
         }
 
-        uint256 totalCurrentStake = totalStaked;
-
         if (
-            totalCurrentStake > 0 &&
+            totalStaked > 0 &&
             firstStakeRewardsTime > 0 &&
             _mostRecentValueCalcTime < endRewardsTime
         ) {
@@ -79,20 +79,21 @@ contract BottoGovernanceV2 is BottoGovernance, ReentrancyGuardUpgradeable {
             uint256 sinceLastCalc = block.timestamp.sub(
                 _mostRecentValueCalcTime
             );
-            uint256 perSecondReward = totalRewards.div(
-                endRewardsTime.sub(firstStakeRewardsTime)
-            );
 
-            if (block.timestamp < endRewardsTime) {
-                value = sinceLastCalc.mul(perSecondReward);
-            } else {
-                uint256 sinceEndTime = block.timestamp.sub(endRewardsTime);
-                value = (sinceLastCalc.sub(sinceEndTime)).mul(perSecondReward);
+            if (_perSecondReward == 0) {
+                _perSecondReward = totalRewards.div(
+                    endRewardsTime.sub(firstStakeRewardsTime)
+                );
             }
 
-            _totalWeight = _totalWeight.add(
-                value.mul(10**18).div(totalCurrentStake)
-            );
+            if (block.timestamp < endRewardsTime) {
+                value = sinceLastCalc.mul(_perSecondReward);
+            } else {
+                uint256 sinceEndTime = block.timestamp.sub(endRewardsTime);
+                value = (sinceLastCalc.sub(sinceEndTime)).mul(_perSecondReward);
+            }
+
+            _totalWeight = _totalWeight.add(value.mul(10**18).div(totalStaked));
 
             _mostRecentValueCalcTime = block.timestamp;
         }
@@ -159,7 +160,7 @@ contract BottoGovernanceV2 is BottoGovernance, ReentrancyGuardUpgradeable {
     }
 
     function payout()
-        public
+        external
         virtual
         update
         nonReentrant
@@ -223,7 +224,7 @@ contract BottoGovernanceV2 is BottoGovernance, ReentrancyGuardUpgradeable {
                 totalStaked.add(totalRewards.sub(totalClaimedRewards))
             );
             require(
-                _balance >= 0,
+                _balance > 0,
                 "Governance::recover: that Botto belongs to stakers"
             );
         }
