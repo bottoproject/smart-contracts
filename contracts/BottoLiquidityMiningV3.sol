@@ -1,36 +1,16 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity >=0.6.0 <0.8.0;
 
 import "./BottoLiquidityMiningV2.sol";
 
-/// @title Botto Liquidity Mining — V3
-/// @notice Storage-layout-compatible upgrade on top of V2 that lets the owner claw
-///         back pending (earned-but-unclaimed) BOTTO rewards via rescueTokens.
-/// @dev    Inherits from V2 so the `totalDueRewards` storage slot and the
-///         `totalDepositRewards()` / `updateEndTime()` behavior added in V2 are
-///         preserved. No new state variables are declared in V3.
+
 contract BottoLiquidityMiningV3 is BottoLiquidityMiningV2 {
     using SafeMath for uint256;
     using TransferHelper for address;
 
-    /// @notice Emitted whenever the owner rescues BOTTO. Useful for off-chain
-    ///         accounting/auditing of pending-reward clawbacks.
-    event RewardsRescued(address indexed to, uint256 amount);
+    event BottoRescued(address indexed to, uint256 amount);
+    event Terminated(uint256 releasedRewards, uint256 reservedDueRewards);
 
-    /// @notice Rescue tokens held by the contract.
-    /// @dev    - `bottoEth` (LP) protection is preserved: only the portion of the
-    ///           contract's bottoEth balance that exceeds `totalStake()` is rescuable.
-    ///           Staked LP tokens still belong to users and cannot be touched.
-    ///         - The previous `BOTTO` restriction (which reserved
-    ///           `totalRewards - totalClaimedRewards` for stakers) is removed. The
-    ///           owner may now rescue any BOTTO held by the contract, including
-    ///           pending rewards — both those still accruing against `totalRewards`
-    ///           and those locked in `totalDueRewards` from a prior `updateEndTime`.
-    ///         - Any other token: rescuable in full (unchanged).
-    /// @param tokenToRescue The token address to rescue.
-    /// @param to            Recipient address.
-    /// @param amount        Amount to transfer.
     function rescueTokens(
         address tokenToRescue,
         address to,
@@ -43,11 +23,58 @@ contract BottoLiquidityMiningV3 is BottoLiquidityMiningV2 {
                 "LiquidityMiningV3::rescueTokens: that BottoEth belongs to stakers"
             );
         } else if (tokenToRescue == botto) {
-            // No reservation for unclaimed/pending rewards. Emitted so that
-            // pending-reward clawbacks are clearly distinguishable on-chain.
-            emit RewardsRescued(to, amount);
+            uint256 reserved = totalDepositRewards().sub(totalClaimedRewards);
+            require(
+                amount <=
+                    IERC20(botto).balanceOf(address(this)).sub(reserved),
+                "LiquidityMiningV3::rescueTokens: that BOTTO belongs to stakers"
+            );
+            emit BottoRescued(to, amount);
         }
 
         tokenToRescue.safeTransfer(to, amount);
+    }
+
+    
+    function terminate() public virtual update onlyOwner nonReentrant {
+        require(
+            startTime != 0,
+            "LiquidityMiningV3::terminate: no deposit received"
+        );
+
+        if (firstStakeTime != 0) {
+            if (block.timestamp < endTime) {
+                // Program still running: crystallize earned-so-far, keep the
+                // not-yet-earned remainder in `totalRewards` to be released.
+                uint256 perSecondReward = totalRewards.div(
+                    endTime.sub(firstStakeTime)
+                );
+                uint256 sinceFirstStakeTime = block.timestamp.sub(
+                    firstStakeTime
+                );
+                uint256 dueRewards = sinceFirstStakeTime.mul(perSecondReward);
+
+                // Never crystallize more than the remaining budget.
+                if (dueRewards > totalRewards) {
+                    dueRewards = totalRewards;
+                }
+
+                totalDueRewards = totalDueRewards.add(dueRewards);
+                totalRewards = totalRewards.sub(dueRewards);
+            } else {
+                // Program already ended: the entire remaining budget has been
+                // emitted, so it is all earned and must stay reserved.
+                totalDueRewards = totalDueRewards.add(totalRewards);
+                totalRewards = 0;
+            }
+        }
+        // If firstStakeTime == 0 nobody ever staked, so nothing was earned and
+        // the whole of `totalRewards` is unearned and released below.
+
+        uint256 released = totalRewards;
+        totalRewards = 0;
+        endTime = block.timestamp;
+
+        emit Terminated(released, totalDueRewards);
     }
 }
