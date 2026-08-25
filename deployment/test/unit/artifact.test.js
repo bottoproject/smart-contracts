@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, test } from "node:test";
 
 import {
@@ -6,6 +9,7 @@ import {
   assertMatchingV3Bytecode,
   loadReproducibleBuild,
   sha256Bytecode,
+  sha256File,
   stripSolidityMetadata,
 } from "../../lib/artifact.js";
 
@@ -18,6 +22,17 @@ describe("deployment artifact safety", () => {
   test("hashes bytecode bytes rather than their hex text", () => {
     assert.equal(sha256Bytecode("0x00"), ZERO_BYTE_SHA256);
     assert.equal(sha256Bytecode("01"), ONE_BYTE_SHA256);
+  });
+
+  test("hashes reproducible manifest files as raw bytes", () => {
+    const directory = mkdtempSync(join(tmpdir(), "botto-artifact-hash-"));
+    try {
+      const path = join(directory, "manifest.json");
+      writeFileSync(path, Buffer.from([0x00]));
+      assert.equal(sha256File(path), ZERO_BYTE_SHA256);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   test("strips only the Solidity CBOR metadata suffix", () => {

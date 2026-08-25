@@ -35,6 +35,10 @@ export function sha256Bytecode(bytecode) {
     .digest("hex");
 }
 
+export function sha256File(path) {
+  return createHash("sha256").update(readFileSync(path)).digest("hex");
+}
+
 export function stripSolidityMetadata(bytecode) {
   const normalized = assertHexBytecode(bytecode, "Solidity bytecode");
   if (normalized.length < 4) {

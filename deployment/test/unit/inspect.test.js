@@ -8,6 +8,14 @@ import {
 } from "../../lib/inspect.js";
 
 const OTHER_ADDRESS = "0x1111111111111111111111111111111111111111";
+const PROXY = "0xf8515Cae6915838543bCD7756F39268CE8F853Fd";
+const V2 = "0x49129912b35283DC64476641837DFE856B48Fa81";
+const PROXY_ADMIN = "0x61b4A813Fd4e361d40339bcA4d8d4E83Be78038D";
+const OWNER = "0xcC23e5a344EB4E99114a8F25f6037951A39AA858";
+const IMPLEMENTATION_SLOT =
+  "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
+const ADMIN_SLOT =
+  "0xb53127684a568b3173ae13b9f8a6016e243e63b6e8ee1178d6a717850b5d6103";
 
 function addressWord(address) {
   return `0x${address.slice(2).toLowerCase().padStart(64, "0")}`;
@@ -16,10 +24,10 @@ function addressWord(address) {
 function providerWith(overrides = {}) {
   const state = {
     chainId: "0x1",
-    implementation: BASELINE.v2Implementation,
-    proxyAdmin: BASELINE.proxyAdmin,
-    contractOwner: BASELINE.owner,
-    proxyAdminOwner: BASELINE.owner,
+    implementation: V2,
+    proxyAdmin: PROXY_ADMIN,
+    contractOwner: OWNER,
+    proxyAdminOwner: OWNER,
     missingCodeAt: undefined,
     ...overrides,
   };
@@ -35,20 +43,20 @@ function providerWith(overrides = {}) {
       }
 
       if (method === "eth_getStorageAt") {
-        if (params[1].toLowerCase() === BASELINE.implementationSlot.toLowerCase()) {
+        if (params[1].toLowerCase() === IMPLEMENTATION_SLOT) {
           return addressWord(state.implementation);
         }
-        if (params[1].toLowerCase() === BASELINE.adminSlot.toLowerCase()) {
+        if (params[1].toLowerCase() === ADMIN_SLOT) {
           return addressWord(state.proxyAdmin);
         }
       }
 
       if (method === "eth_call") {
         const target = params[0].to.toLowerCase();
-        if (target === BASELINE.proxy.toLowerCase()) {
+        if (target === PROXY.toLowerCase()) {
           return addressWord(state.contractOwner);
         }
-        if (target === BASELINE.proxyAdmin.toLowerCase()) {
+        if (target === PROXY_ADMIN.toLowerCase()) {
           return addressWord(state.proxyAdminOwner);
         }
       }
@@ -65,11 +73,11 @@ describe("BIP-86 deployment inspection", () => {
     assert.deepEqual(inspection, {
       chainId: 1,
       state: "v2",
-      proxy: BASELINE.proxy,
-      implementation: BASELINE.v2Implementation,
-      proxyAdmin: BASELINE.proxyAdmin,
-      contractOwner: BASELINE.owner,
-      proxyAdminOwner: BASELINE.owner,
+      proxy: PROXY,
+      implementation: V2,
+      proxyAdmin: PROXY_ADMIN,
+      contractOwner: OWNER,
+      proxyAdminOwner: OWNER,
     });
   });
 
@@ -103,7 +111,7 @@ describe("BIP-86 deployment inspection", () => {
 
   test("rejects a baseline address without deployed code", async () => {
     await assert.rejects(
-      inspectDeployment(providerWith({ missingCodeAt: BASELINE.proxyAdmin })),
+      inspectDeployment(providerWith({ missingCodeAt: PROXY_ADMIN })),
       /ProxyAdmin has no deployed code/
     );
   });

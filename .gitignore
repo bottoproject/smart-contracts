@@ -13,6 +13,7 @@
 # production
 /build
 /build-contracts
+/deployments/runtime
 /deployment/artifacts
 /deployment/cache
 /deployment/project:
