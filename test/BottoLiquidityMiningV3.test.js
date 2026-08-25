@@ -117,6 +117,35 @@ contract("BottoLiquidityMiningV3", (accounts) => {
     );
   });
 
+  it("rejects owner recovery at the claim deadline and allows it one second later", async function () {
+    this.miningProxy = await upgradeProxy(
+      this.miningProxy.address,
+      MockBottoLiquidityMiningV3
+    );
+    const deadline = (await time.latest()).add(time.duration.hours(1));
+    const recovered = await this.botto.balanceOf(this.miningProxy.address);
+    const treasuryBefore = await this.botto.balanceOf(DAO_TREASURY);
+    await this.miningProxy.setMockClaimDeadline(deadline);
+    await time.increaseTo(deadline);
+
+    await expectRevert(
+      this.miningProxy.recoverUnclaimedRewards({ from: owner }),
+      "LiquidityMiningV3::recoverUnclaimedRewards: claim period active"
+    );
+
+    await time.increaseTo(deadline.add(time.duration.seconds(1)));
+
+    const tx = await this.miningProxy.recoverUnclaimedRewards({ from: owner });
+
+    expectEvent(tx, "UnclaimedRewardsRecovered", {
+      treasury: DAO_TREASURY,
+      amount: recovered,
+    });
+    expect(await this.botto.balanceOf(DAO_TREASURY)).to.be.bignumber.equal(
+      treasuryBefore.add(recovered)
+    );
+  });
+
   it("pays rewards when withdrawal is evaluated at the deadline", async function () {
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
