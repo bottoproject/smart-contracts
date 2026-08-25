@@ -6,6 +6,7 @@
   "scripts": {
     "compile": "node scripts/sync-sources.js && hardhat compile",
     "inspect": "hardhat run scripts/inspect.js --network mainnet",
+    "prepare": "node scripts/sync-sources.js && hardhat run scripts/prepare.js --network mainnet",
     "propose": "hardhat run scripts/propose.js --network mainnet",
     "verify": "hardhat run scripts/verify.js --network mainnet",
     "recover-proposal": "hardhat run scripts/recover-proposal.js --network mainnet",
