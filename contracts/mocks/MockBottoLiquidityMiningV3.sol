@@ -21,3 +21,17 @@ contract MockBottoLiquidityMiningV3 is BottoLiquidityMiningV3 {
         return _mockClaimDeadline;
     }
 }
+
+contract MockAtClaimDeadlineBottoLiquidityMiningV3 is
+    BottoLiquidityMiningV3
+{
+    function _claimDeadline()
+        internal
+        view
+        virtual
+        override
+        returns (uint256)
+    {
+        return block.timestamp;
+    }
+}

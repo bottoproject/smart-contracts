@@ -59,6 +59,20 @@ contract BottoLiquidityMiningV3 is BottoLiquidityMiningV2 {
         emit Withdraw(msg.sender, bottoEthOut);
     }
 
+    function payout()
+        public
+        virtual
+        override
+        returns (uint256 reward)
+    {
+        require(
+            block.timestamp <= _claimDeadline(),
+            "LiquidityMiningV3::payout: claim period expired"
+        );
+
+        return super.payout();
+    }
+
     /// @notice Sends all expired BOTTO rewards to the BIP-86 treasury.
     function recoverUnclaimedRewards() public onlyOwner nonReentrant {
         require(

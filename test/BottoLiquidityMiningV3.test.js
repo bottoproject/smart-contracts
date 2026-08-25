@@ -14,6 +14,9 @@ const BottoLiquidityMiningV3 = artifacts.require("BottoLiquidityMiningV3");
 const MockBottoLiquidityMiningV3 = artifacts.require(
   "MockBottoLiquidityMiningV3"
 );
+const MockAtClaimDeadlineBottoLiquidityMiningV3 = artifacts.require(
+  "MockAtClaimDeadlineBottoLiquidityMiningV3"
+);
 const MockERC20 = artifacts.require("MockERC20");
 
 contract("BottoLiquidityMiningV3", (accounts) => {
@@ -29,7 +32,10 @@ contract("BottoLiquidityMiningV3", (accounts) => {
     this.botto = await BOTTO.new("Botto", "BOTTO", initialSupply);
     this.bottoEth = await MockERC20.new("BottoEth", "BOTTOETH");
     this.otherToken = await MockERC20.new("Other", "OTHER");
-    await this.bottoEth.mint(owner, staker1Stake.add(staker2Stake).mul(toBN("2")));
+    await this.bottoEth.mint(
+      owner,
+      staker1Stake.add(staker2Stake).mul(toBN("2"))
+    );
 
     this.miningProxy = await deployProxy(BottoLiquidityMining, [
       this.bottoEth.address,
@@ -114,16 +120,93 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   it("pays rewards when withdrawal is evaluated at the deadline", async function () {
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
+      MockAtClaimDeadlineBottoLiquidityMiningV3
+    );
+
+    const bottoBefore = await this.botto.balanceOf(staker1);
+    const userClaimedBefore = await this.miningProxy.userClaimedRewards(
+      staker1
+    );
+    const totalClaimedBefore = await this.miningProxy.totalClaimedRewards();
+    const result = await this.miningProxy.withdraw.call({ from: staker1 });
+    const tx = await this.miningProxy.withdraw({ from: staker1 });
+    const paidReward = tx.logs.find((log) => log.event === "Payout").args
+      .reward;
+
+    expect(result.bottoEthOut).to.be.bignumber.equal(staker1Stake);
+    expect(result.reward).to.be.bignumber.gt(toBN("0"));
+    expect(paidReward).to.be.bignumber.gt(toBN("0"));
+    expectEvent(tx, "Payout", {
+      staker: staker1,
+      reward: paidReward,
+    });
+    expectEvent(tx, "Withdraw", {
+      staker: staker1,
+      bottoEthOut: staker1Stake,
+    });
+    expect(await this.botto.balanceOf(staker1)).to.be.bignumber.equal(
+      bottoBefore.add(paidReward)
+    );
+    expect(await this.bottoEth.balanceOf(staker1)).to.be.bignumber.equal(
+      staker1Stake
+    );
+    expect(
+      await this.miningProxy.userClaimedRewards(staker1)
+    ).to.be.bignumber.equal(userClaimedBefore.add(paidReward));
+    expect(await this.miningProxy.totalClaimedRewards()).to.be.bignumber.equal(
+      totalClaimedBefore.add(paidReward)
+    );
+    expect(
+      await this.miningProxy.totalUserStake(staker1)
+    ).to.be.bignumber.equal("0");
+  });
+
+  it("retains payout behavior when evaluated at the deadline", async function () {
+    this.miningProxy = await upgradeProxy(
+      this.miningProxy.address,
+      MockAtClaimDeadlineBottoLiquidityMiningV3
+    );
+
+    const bottoBefore = await this.botto.balanceOf(staker1);
+    const userClaimedBefore = await this.miningProxy.userClaimedRewards(
+      staker1
+    );
+    const totalClaimedBefore = await this.miningProxy.totalClaimedRewards();
+    const reward = await this.miningProxy.payout.call({ from: staker1 });
+    const tx = await this.miningProxy.payout({ from: staker1 });
+    const paidReward = tx.logs.find((log) => log.event === "Payout").args
+      .reward;
+
+    expect(reward).to.be.bignumber.gt(toBN("0"));
+    expect(paidReward).to.be.bignumber.gt(toBN("0"));
+    expectEvent(tx, "Payout", { staker: staker1, reward: paidReward });
+    expect(await this.botto.balanceOf(staker1)).to.be.bignumber.equal(
+      bottoBefore.add(paidReward)
+    );
+    expect(
+      await this.miningProxy.userClaimedRewards(staker1)
+    ).to.be.bignumber.equal(userClaimedBefore.add(paidReward));
+    expect(await this.miningProxy.totalClaimedRewards()).to.be.bignumber.equal(
+      totalClaimedBefore.add(paidReward)
+    );
+    expect(
+      await this.miningProxy.totalUserStake(staker1)
+    ).to.be.bignumber.equal(staker1Stake);
+  });
+
+  it("rejects payout one second after the claim deadline", async function () {
+    this.miningProxy = await upgradeProxy(
+      this.miningProxy.address,
       MockBottoLiquidityMiningV3
     );
     const deadline = (await time.latest()).add(time.duration.hours(1));
     await this.miningProxy.setMockClaimDeadline(deadline);
-    await time.increaseTo(deadline);
+    await time.increaseTo(deadline.add(time.duration.seconds(1)));
 
-    const result = await this.miningProxy.withdraw.call({ from: staker1 });
-
-    expect(result.bottoEthOut).to.be.bignumber.equal(staker1Stake);
-    expect(result.reward).to.be.bignumber.gt(toBN("0"));
+    await expectRevert(
+      this.miningProxy.payout({ from: staker1 }),
+      "LiquidityMiningV3::payout: claim period expired"
+    );
   });
 
   it("recovers the full BOTTO balance only to the DAO treasury", async function () {
@@ -178,7 +261,9 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   it("returns LP principal but zero expired rewards after recovery", async function () {
     await this.miningProxy.recoverUnclaimedRewards({ from: owner });
     const totalClaimedBefore = await this.miningProxy.totalClaimedRewards();
-    const userClaimedBefore = await this.miningProxy.userClaimedRewards(staker1);
+    const userClaimedBefore = await this.miningProxy.userClaimedRewards(
+      staker1
+    );
 
     const result = await this.miningProxy.withdraw.call({ from: staker1 });
     expect(result.bottoEthOut).to.be.bignumber.equal(staker1Stake);
@@ -200,9 +285,9 @@ contract("BottoLiquidityMiningV3", (accounts) => {
     expect(
       await this.miningProxy.userClaimedRewards(staker1)
     ).to.be.bignumber.equal(userClaimedBefore);
-    expect(await this.miningProxy.totalUserStake(staker1)).to.be.bignumber.equal(
-      "0"
-    );
+    expect(
+      await this.miningProxy.totalUserStake(staker1)
+    ).to.be.bignumber.equal("0");
     expect(await this.miningProxy.totalStake()).to.be.bignumber.equal(
       staker2Stake
     );
