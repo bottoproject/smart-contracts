@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "compile": "node scripts/sync-sources.js && hardhat compile",
+    "inspect": "hardhat run scripts/inspect.js --network mainnet",
     "test:unit": "node --test test/unit/*.test.js"
   },
   "devDependencies": {

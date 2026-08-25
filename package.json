@@ -21,6 +21,7 @@
     "test:all": "truffle test --compile-none",
     "test:v3": "truffle test test/BottoLiquidityMiningV3.test.js --compile-none",
     "deploy:compile": "npm run compile --workspace=@botto/mainnet-deployment",
+    "deploy:inspect": "npm run inspect --workspace=@botto/mainnet-deployment",
     "test:deploy:unit": "npm run test:unit --workspace=@botto/mainnet-deployment"
   },
   "devDependencies": {
