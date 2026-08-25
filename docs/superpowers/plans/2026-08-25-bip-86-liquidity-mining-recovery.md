@@ -15,7 +15,7 @@
 - Upgrade path is deployed `BottoLiquidityMiningV2` directly to rewritten `BottoLiquidityMiningV3`.
 - Do not add, remove, reorder, or change the type of any V1/V2 storage variable.
 - `CLAIM_DEADLINE` is `1774915199` (March 30, 2026 23:59:59 UTC).
-- `DAO_TREASURY` is `0x35bB964878D7B6dDfa69cf0B97EE63Fa3c9D9B49`.
+- `DAO_TREASURY` is `0x35bb964878d7B6ddFA69cF0b97EE63fa3C9d9b49`.
 - Only BOTTO rewards go to the treasury; staked BOTTO-ETH UNI-V2 remains withdrawable.
 - Do not deploy, upgrade, sign, or submit any mainnet transaction.
 
@@ -38,7 +38,7 @@ Create a test fixture that deploys BOTTO and mock LP tokens, deploys V1 behind a
 
 ```javascript
 const CLAIM_DEADLINE = toBN("1774915199");
-const DAO_TREASURY = "0x35bB964878D7B6dDfa69cf0B97EE63Fa3c9D9B49";
+const DAO_TREASURY = "0x35bb964878d7B6ddFA69cF0b97EE63fa3C9d9b49";
 
 this.miningProxy = await deployProxy(BottoLiquidityMining, [
   this.bottoEth.address,
@@ -194,7 +194,7 @@ Do not change any state declaration or calculation inside the function.
 ```solidity
 uint256 public constant CLAIM_DEADLINE = 1774915199;
 address public constant DAO_TREASURY =
-    0x35bB964878D7B6dDfa69cf0B97EE63Fa3c9D9B49;
+    0x35bb964878d7B6ddFA69cF0b97EE63fa3C9d9b49;
 
 event UnclaimedRewardsRecovered(address indexed treasury, uint256 amount);
 event RewardsForfeited(address indexed staker, uint256 amount);

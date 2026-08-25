@@ -17,7 +17,7 @@ it does not transfer or expire users' staked LP tokens.
 - Current deployed implementation: `BottoLiquidityMiningV2` at
   `0x49129912b35283dc64476641837dfe856b48fa81`
 - BOTTO token: `0x9dfad1b7102d46b1b197b90095b5c4e9f5845bba`
-- DAO treasury: `0x35bB964878D7B6dDfa69cf0B97EE63Fa3c9D9B49`
+- DAO treasury: `0x35bb964878d7B6ddFA69cF0b97EE63fa3C9d9b49`
 - Contract and ProxyAdmin owner: `0xcC23e5a344EB4E99114a8F25f6037951A39AA858`
 
 The repository's existing V3 has never been deployed. Its ABI, events, and
@@ -29,7 +29,7 @@ from the deployed V2 to the rewritten V3.
 V3 defines constants rather than new storage variables:
 
 - `CLAIM_DEADLINE = 1774915199`, representing March 30, 2026 at 23:59:59 UTC.
-- `DAO_TREASURY = 0x35bB964878D7B6dDfa69cf0B97EE63Fa3c9D9B49`.
+- `DAO_TREASURY = 0x35bb964878d7B6ddFA69cF0b97EE63fa3C9d9b49`.
 
 Using the end of the specified UTC calendar day resolves the BIP's date-only
 wording conservatively. Because deployment occurs after the deadline, the
