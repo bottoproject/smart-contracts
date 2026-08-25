@@ -22,7 +22,7 @@
     "test:v3": "truffle test test/BottoLiquidityMiningV3.test.js --compile-none",
     "deploy:compile": "npm run compile --workspace=@botto/mainnet-deployment",
     "deploy:inspect": "npm run inspect --workspace=@botto/mainnet-deployment",
-    "deploy:prepare": "npm run prepare --workspace=@botto/mainnet-deployment",
+    "deploy:prepare": "npm run deploy-implementation --workspace=@botto/mainnet-deployment",
     "deploy:propose": "npm run propose --workspace=@botto/mainnet-deployment",
     "deploy:verify": "npm run verify --workspace=@botto/mainnet-deployment",
     "deploy:recover-proposal": "npm run recover-proposal --workspace=@botto/mainnet-deployment",
