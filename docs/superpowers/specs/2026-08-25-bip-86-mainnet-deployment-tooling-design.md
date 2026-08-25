@@ -63,8 +63,18 @@ It performs no transaction and requires only `MAINNET_RPC_URL`.
 
 Runs the inspection checks, imports the existing transparent proxy and V2
 implementation into the local OpenZeppelin manifest, validates V2-to-V3
-storage compatibility, and deploys the V3 implementation. It does not update
-the proxy.
+storage compatibility with `validateUpgrade`, and deploys the exact
+reproducible Truffle V3 bytecode. The modern Hardhat build cannot be passed
+directly to `prepareUpgrade` because Solidity metadata contains different npm
+source identifiers; deploying it would violate the full reproducible hash.
+This split validation-plus-deployment sequence preserves both guarantees. It
+does not update the proxy.
+
+OpenZeppelin's modern initializer analysis flags the historical V1/V2
+initializer structure. Validation permits only `missing-initializer`,
+`missing-initializer-call`, and `incorrect-initializer-order` for this legacy
+inheritance chain. Storage checking remains enabled and no other unsafe option
+is allowed.
 
 This is the only command that can broadcast a transaction. It requires
 `MAINNET_RPC_URL`, `DEPLOYER_PRIVATE_KEY`, and the explicit acknowledgement

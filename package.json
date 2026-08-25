@@ -26,7 +26,8 @@
     "deploy:propose": "npm run propose --workspace=@botto/mainnet-deployment",
     "deploy:verify": "npm run verify --workspace=@botto/mainnet-deployment",
     "deploy:recover-proposal": "npm run recover-proposal --workspace=@botto/mainnet-deployment",
-    "test:deploy:unit": "npm run test:unit --workspace=@botto/mainnet-deployment"
+    "test:deploy:unit": "npm run test:unit --workspace=@botto/mainnet-deployment",
+    "test:deploy:fork": "npm run test:fork --workspace=@botto/mainnet-deployment"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.4.0",

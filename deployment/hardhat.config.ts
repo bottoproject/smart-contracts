@@ -33,6 +33,7 @@ export default defineConfig({
     hardhatMainnet: {
       type: "edr-simulated",
       chainType: "l1",
+      chainId: 1,
       forking: {
         url: configVariable("MAINNET_RPC_URL"),
         blockNumber: 25_832_838,

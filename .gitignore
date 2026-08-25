@@ -16,6 +16,7 @@
 /deployments/runtime
 /deployment/artifacts
 /deployment/cache
+/deployment/.openzeppelin
 /deployment/project:
 
 # misc

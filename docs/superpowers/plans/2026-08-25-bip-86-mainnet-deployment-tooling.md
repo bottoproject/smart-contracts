@@ -226,7 +226,7 @@ Expected: failure because the preparation module does not exist.
 
 - [ ] **Step 3: Implement authorization before signer creation**
 
-Validate environment and chain first. Then compare artifacts, inspect the exact V2 state, create the V2 and V3 factories, call `forceImport(proxy, V2, { kind: "transparent" })`, and call `prepareUpgrade(proxy, V3, { kind: "transparent", getTxResponse: true })`. Resolve the new implementation and deployment transaction, re-check deployed bytecode, and atomically write the runtime record with file mode `0600`.
+Validate environment and chain first. Then compare artifacts, inspect the exact V2 state, call `forceImport` and `validateUpgrade` with Hardhat factories and the three documented legacy initializer exceptions, and deploy the full reproducible Truffle V3 bytecode with an ethers factory. Resolve the new implementation and deployment transaction, re-check deployed bytecode, and atomically write the runtime record with file mode `0600`.
 
 - [ ] **Step 4: Add safe environment documentation**
 

@@ -22,6 +22,11 @@ import {
 const PREPARATION_MODE = "prepare-mainnet-v3";
 const PRIVATE_KEY_PATTERN = /^0x[a-fA-F0-9]{64}$/;
 const ZERO_PRIVATE_KEY = `0x${"0".repeat(64)}`;
+const LEGACY_INITIALIZER_EXCEPTIONS = [
+  "missing-initializer",
+  "missing-initializer-call",
+  "incorrect-initializer-order",
+];
 
 export function assertPreparationAuthorized(env, chainId) {
   if (env.BOTTO_DEPLOYMENT_MODE !== PREPARATION_MODE) {
@@ -74,7 +79,9 @@ export async function prepareV3Implementation({
   hre,
   connection,
   repositoryRoot,
+  runtimeRoot = repositoryRoot,
   privateKey,
+  signer,
 }) {
   const inspection = await inspectDeployment(connection.provider);
   if (inspection.state !== "v2") {
@@ -99,39 +106,40 @@ export async function prepareV3Implementation({
   assertCompatibleValidationBytecode(truffleV2, hardhatV2);
   assertCompatibleValidationBytecode(truffleV3, hardhatV3);
 
-  const wallet = new Wallet(privateKey, connection.ethers.provider);
-  const v2Factory = new ContractFactory(
-    truffleV2.abi,
-    truffleV2.bytecode,
-    wallet
+  if (signer && privateKey) {
+    throw new Error("provide either a signer or a private key, not both");
+  }
+  const deploymentSigner =
+    signer ?? new Wallet(privateKey, connection.ethers.provider);
+  const hardhatV2Factory = await connection.ethers.getContractFactory(
+    "BottoLiquidityMiningV2",
+    deploymentSigner
   );
-  const v3Factory = new ContractFactory(
+  const hardhatV3Factory = await connection.ethers.getContractFactory(
+    "BottoLiquidityMiningV3",
+    deploymentSigner
+  );
+  const reproducibleV3Factory = new ContractFactory(
     truffleV3.abi,
     truffleV3.bytecode,
-    wallet
+    deploymentSigner
   );
   const upgradesApi = await upgrades(hre, connection);
 
-  await upgradesApi.forceImport(BASELINE.proxy, v2Factory, {
+  await upgradesApi.forceImport(BASELINE.proxy, hardhatV2Factory, {
     kind: "transparent",
+    unsafeAllow: LEGACY_INITIALIZER_EXCEPTIONS,
   });
-  const deploymentTransaction = await upgradesApi.prepareUpgrade(
+  await upgradesApi.validateUpgrade(
     BASELINE.proxy,
-    v3Factory,
+    hardhatV3Factory,
     {
       kind: "transparent",
-      getTxResponse: true,
-      redeployImplementation: "always",
+      unsafeAllow: LEGACY_INITIALIZER_EXCEPTIONS,
     }
   );
-  if (
-    !deploymentTransaction ||
-    typeof deploymentTransaction === "string" ||
-    typeof deploymentTransaction.wait !== "function"
-  ) {
-    throw new Error("OpenZeppelin did not return the V3 deployment transaction");
-  }
-
+  const deployment = await reproducibleV3Factory.deploy();
+  const deploymentTransaction = deployment.deploymentTransaction();
   const receipt = await deploymentTransaction.wait();
   if (!receipt?.contractAddress) {
     throw new Error("V3 deployment receipt did not contain a contract address");
@@ -160,6 +168,6 @@ export async function prepareV3Implementation({
     );
   }
 
-  const path = writePreparationRecord(repositoryRoot, record);
+  const path = writePreparationRecord(runtimeRoot, record);
   return { path, record };
 }
