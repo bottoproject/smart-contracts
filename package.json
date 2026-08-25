@@ -15,6 +15,7 @@
     "compile": "truffle compile --all",
     "build:reproducible": "npm run clean && npm run compile && node scripts/reproducible-build.js --artifact build/contracts/BottoLiquidityMiningV3.json --output deployments/builds/BottoLiquidityMiningV3.json",
     "test:build": "node --test test/reproducible-build.test.js",
+    "test:all": "truffle test --compile-none",
     "test:v3": "truffle test test/BottoLiquidityMiningV3.test.js --compile-none"
   },
   "devDependencies": {

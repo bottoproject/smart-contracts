@@ -22,6 +22,8 @@ contract("BottoGovernanceV2", (accounts) => {
   const totalRewards = toBN("60000000000000000000000");
   const stakingDuration = time.duration.years(1);
   const rewardPerSecond = totalRewards.div(stakingDuration);
+  // Ganache can estimate before the timestamp-induced zero-to-nonzero SSTORE.
+  const deterministicStakeGas = 500000;
 
   beforeEach(async function () {
     this.botto = await BOTTO.new("Botto", "BOTTO", initialSupply);
@@ -503,6 +505,7 @@ contract("BottoGovernanceV2", (accounts) => {
           });
           tx2 = await this.governanceProxy.stake(staker2Initial, {
             from: staker2,
+            gas: deterministicStakeGas,
           });
         });
 
@@ -554,6 +557,9 @@ contract("BottoGovernanceV2", (accounts) => {
               from: staker1,
             });
             tx = await this.governanceProxy.payout({ from: staker1 });
+            this.paidRewardStaker1 = tx.logs.find(
+              ({ event }) => event === "Payout"
+            ).args.reward;
           });
           it("emits a Payout event", async function () {
             expectEvent(tx, "Payout", {
@@ -572,11 +578,15 @@ contract("BottoGovernanceV2", (accounts) => {
               expectedReward,
               expectedReward.div(toBN("100000"))
             );
+            expect(this.paidRewardStaker1).to.be.bignumber.closeTo(
+              expectedReward,
+              expectedReward.div(toBN("100000"))
+            );
           });
           it("contract has staker1 claimed rewards", async function () {
             expect(
               await this.governanceProxy.userClaimedRewards(staker1)
-            ).to.be.bignumber.equal(reward0Staker1);
+            ).to.be.bignumber.equal(this.paidRewardStaker1);
           });
           it("staker1 has expected BOTTO rewards", async function () {
             totalStakeForPeriod = staker1Initial
@@ -587,9 +597,8 @@ contract("BottoGovernanceV2", (accounts) => {
               .mul(staker1Initial)
               .div(totalStakeForPeriod);
 
-            expect(await this.botto.balanceOf(staker1)).to.be.bignumber.closeTo(
-              reward0Staker1,
-              expectedReward.div(toBN("100000"))
+            expect(await this.botto.balanceOf(staker1)).to.be.bignumber.equal(
+              this.paidRewardStaker1
             );
           });
 
@@ -614,6 +623,9 @@ contract("BottoGovernanceV2", (accounts) => {
             tx2 = await this.governanceProxy.payout({
               from: earlyStaker,
             });
+            this.paidEarlyReward = tx2.logs.find(
+              ({ event }) => event === "Payout"
+            ).args.reward;
           });
 
           it("emits a Payout event", async function () {
@@ -634,12 +646,16 @@ contract("BottoGovernanceV2", (accounts) => {
               expectedRewardEarly,
               expectedRewardEarly.div(toBN("100000"))
             );
+            expect(this.paidEarlyReward).to.be.bignumber.closeTo(
+              expectedRewardEarly,
+              expectedRewardEarly.div(toBN("100000"))
+            );
           });
 
           it("contract has early staker claimed rewards", async function () {
             expect(
               await this.governanceProxy.userClaimedRewards(earlyStaker)
-            ).to.be.bignumber.equal(earlyReward);
+            ).to.be.bignumber.equal(this.paidEarlyReward);
           });
 
           it("early staker has expected BOTTO rewards", async function () {
@@ -652,9 +668,8 @@ contract("BottoGovernanceV2", (accounts) => {
               .div(totalStakeForPeriod);
 
             const earlyStakerBalance = await this.botto.balanceOf(earlyStaker);
-            expect(earlyStakerBalance).to.be.bignumber.closeTo(
-              earlyReward,
-              expectedRewardEarly.div(toBN("100000"))
+            expect(earlyStakerBalance).to.be.bignumber.equal(
+              this.paidEarlyReward
             );
           });
 
@@ -673,6 +688,9 @@ contract("BottoGovernanceV2", (accounts) => {
               from: staker2,
             });
             tx2 = await this.governanceProxy.unstake({ from: staker2 });
+            this.paidRewardStaker2 = tx2.logs.find(
+              ({ event }) => event === "Payout"
+            ).args.reward;
           });
           it("emits a Payout event", async function () {
             expectEvent(tx2, "Payout", {
@@ -696,12 +714,16 @@ contract("BottoGovernanceV2", (accounts) => {
               expectedReward,
               expectedReward.div(toBN("100000"))
             );
+            expect(this.paidRewardStaker2).to.be.bignumber.closeTo(
+              expectedReward,
+              expectedReward.div(toBN("100000"))
+            );
           });
 
           it("contract has staker2 claimed rewards", async function () {
             expect(
               await this.governanceProxy.userClaimedRewards(staker2)
-            ).to.be.bignumber.equal(reward0Staker2);
+            ).to.be.bignumber.equal(this.paidRewardStaker2);
           });
 
           it("staker2 has expected BOTTO rewards", async function () {
@@ -713,9 +735,8 @@ contract("BottoGovernanceV2", (accounts) => {
               .mul(staker2Initial)
               .div(totalStakeForPeriod);
 
-            expect(await this.botto.balanceOf(staker2)).to.be.bignumber.closeTo(
-              reward0Staker2.add(staker2Initial),
-              expectedReward.div(toBN("100000"))
+            expect(await this.botto.balanceOf(staker2)).to.be.bignumber.equal(
+              this.paidRewardStaker2.add(staker2Initial)
             );
           });
 

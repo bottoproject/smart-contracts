@@ -32,7 +32,8 @@ records the pinned toolchain, compiler settings, bytecode sizes, and SHA-256
 hashes of both creation and deployed bytecode.
 
 GitHub Actions repeats the clean build twice, compares the manifests, checks
-the committed manifest, runs the V3 tests, and uploads both build artifacts.
+the committed manifest, runs the complete contract test suite, and uploads
+both build artifacts.
 
 ## Testing
 
@@ -41,7 +42,7 @@ npm run build:reproducible
 npm run test:v3
 
 # Complete historical suite
-npx truffle test --compile-none
+npm run test:all
 ```
 
 ## Migrations
