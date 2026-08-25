@@ -5,6 +5,7 @@ const {
     time,
 } = require("@openzeppelin/test-helpers");
 const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const { LEGACY_UPGRADE_OPTIONS } = require("./helpers/legacy-upgrades");
 const { toBN } = web3.utils;
 
 const BOTTO = artifacts.require("BOTTO");
@@ -27,10 +28,11 @@ contract("BottoLiquidityMiningV2", (accounts, network) => {
         this.botto = await BOTTO.new("Botto", "BOTTO", initialSupply);
         this.bottoEth = await MockERC20.new("BottoEth", "BOTTOETH");
         await this.bottoEth.mint(owner, initialBottoEthSupply);
-        this.miningProxy = await deployProxy(BottoLiquidityMining, [
-            this.bottoEth.address,
-            this.botto.address,
-        ]);
+        this.miningProxy = await deployProxy(
+            BottoLiquidityMining,
+            [this.bottoEth.address, this.botto.address],
+            LEGACY_UPGRADE_OPTIONS
+        );
     });
 
     context("deposit reward tokens", function() {
@@ -109,7 +111,11 @@ contract("BottoLiquidityMiningV2", (accounts, network) => {
 
                     context("upgrade contract", function() {
                         beforeEach(async function() {
-                            miningProxy = await upgradeProxy(this.miningProxy.address, BottoLiquidityMiningV2);
+                            miningProxy = await upgradeProxy(
+                                this.miningProxy.address,
+                                BottoLiquidityMiningV2,
+                                LEGACY_UPGRADE_OPTIONS
+                            );
                         });
 
                         it("staker1 has same rewards", async function() {

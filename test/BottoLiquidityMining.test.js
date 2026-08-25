@@ -5,6 +5,7 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const { LEGACY_UPGRADE_OPTIONS } = require("./helpers/legacy-upgrades");
 const { toBN } = web3.utils;
 
 const BOTTO = artifacts.require("BOTTO");
@@ -30,10 +31,11 @@ contract("BottoLiquidityMining", (accounts, network) => {
     this.botto = await BOTTO.new("Botto", "BOTTO", initialSupply);
     this.bottoEth = await MockERC20.new("BottoEth", "BOTTOETH");
     await this.bottoEth.mint(owner, initialBottoEthSupply);
-    this.miningProxy = await deployProxy(BottoLiquidityMining, [
-      this.bottoEth.address,
-      this.botto.address,
-    ]);
+    this.miningProxy = await deployProxy(
+      BottoLiquidityMining,
+      [this.bottoEth.address, this.botto.address],
+      LEGACY_UPGRADE_OPTIONS
+    );
   });
 
   it("has expected BottoEth address", async function () {
@@ -418,7 +420,8 @@ contract("BottoLiquidityMining", (accounts, network) => {
         // the upgrade function doesn't change the deployed implementation address on each iteration
         this.miningProxy = await upgradeProxy(
           this.miningProxy.address,
-          MockBottoLiquidityMining02
+          MockBottoLiquidityMining02,
+          LEGACY_UPGRADE_OPTIONS
         );
       });
 

@@ -5,6 +5,7 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const { LEGACY_UPGRADE_OPTIONS } = require("./helpers/legacy-upgrades");
 const { toBN, fromWei } = web3.utils;
 
 const BOTTO = artifacts.require("BOTTO");
@@ -27,9 +28,11 @@ contract("BottoGovernanceV2", (accounts) => {
 
   beforeEach(async function () {
     this.botto = await BOTTO.new("Botto", "BOTTO", initialSupply);
-    this.governanceProxy = await deployProxy(BottoGovernanceV2, [
-      this.botto.address,
-    ]);
+    this.governanceProxy = await deployProxy(
+      BottoGovernanceV2,
+      [this.botto.address],
+      LEGACY_UPGRADE_OPTIONS
+    );
     await this.botto.transfer(staker1, staker1Initial);
     await this.botto.transfer(staker2, staker2Initial);
     await this.botto.transfer(earlyStaker, earlyStakerInitial);
@@ -241,7 +244,8 @@ contract("BottoGovernanceV2", (accounts) => {
             // the upgrade function doesn't change the deployed implementation address on each iteration
             this.governanceProxy = await upgradeProxy(
               this.governanceProxy.address,
-              MockBottoGovernance03
+              MockBottoGovernance03,
+              LEGACY_UPGRADE_OPTIONS
             );
           });
 

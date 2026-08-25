@@ -5,6 +5,7 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const { LEGACY_UPGRADE_OPTIONS } = require("./helpers/legacy-upgrades");
 const { toBN } = web3.utils;
 
 const BOTTO = artifacts.require("BOTTO");
@@ -38,10 +39,11 @@ contract("BottoLiquidityMiningV3", (accounts) => {
       staker1Stake.add(staker2Stake).mul(toBN("2"))
     );
 
-    this.miningProxy = await deployProxy(BottoLiquidityMining, [
-      this.bottoEth.address,
-      this.botto.address,
-    ]);
+    this.miningProxy = await deployProxy(
+      BottoLiquidityMining,
+      [this.bottoEth.address, this.botto.address],
+      LEGACY_UPGRADE_OPTIONS
+    );
 
     const start = (await time.latest()).add(time.duration.minutes(5));
     const end = start.add(time.duration.days(7));
@@ -69,11 +71,13 @@ contract("BottoLiquidityMiningV3", (accounts) => {
 
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
-      BottoLiquidityMiningV2
+      BottoLiquidityMiningV2,
+      LEGACY_UPGRADE_OPTIONS
     );
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
-      BottoLiquidityMiningV3
+      BottoLiquidityMiningV3,
+      LEGACY_UPGRADE_OPTIONS
     );
   });
 
@@ -110,7 +114,8 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   it("rejects owner recovery while the claim period is active", async function () {
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
-      MockBottoLiquidityMiningV3
+      MockBottoLiquidityMiningV3,
+      LEGACY_UPGRADE_OPTIONS
     );
     const futureDeadline = (await time.latest()).add(time.duration.days(1));
     await this.miningProxy.setMockClaimDeadline(futureDeadline);
@@ -153,7 +158,8 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   it("pays rewards when withdrawal is evaluated at the deadline", async function () {
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
-      MockAtClaimDeadlineBottoLiquidityMiningV3
+      MockAtClaimDeadlineBottoLiquidityMiningV3,
+      LEGACY_UPGRADE_OPTIONS
     );
 
     const bottoBefore = await this.botto.balanceOf(staker1);
@@ -197,7 +203,8 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   it("retains payout behavior when evaluated at the deadline", async function () {
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
-      MockAtClaimDeadlineBottoLiquidityMiningV3
+      MockAtClaimDeadlineBottoLiquidityMiningV3,
+      LEGACY_UPGRADE_OPTIONS
     );
 
     const bottoBefore = await this.botto.balanceOf(staker1);
@@ -230,7 +237,8 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   it("rejects payout one second after the claim deadline", async function () {
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
-      MockBottoLiquidityMiningV3
+      MockBottoLiquidityMiningV3,
+      LEGACY_UPGRADE_OPTIONS
     );
     const deadline = (await time.latest()).add(time.duration.hours(1));
     await this.miningProxy.setMockClaimDeadline(deadline);
