@@ -129,7 +129,8 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   it("rejects owner recovery at the claim deadline and allows it one second later", async function () {
     this.miningProxy = await upgradeProxy(
       this.miningProxy.address,
-      MockBottoLiquidityMiningV3
+      MockBottoLiquidityMiningV3,
+      LEGACY_UPGRADE_OPTIONS
     );
     const deadline = (await time.latest()).add(time.duration.hours(1));
     const recovered = await this.botto.balanceOf(this.miningProxy.address);
