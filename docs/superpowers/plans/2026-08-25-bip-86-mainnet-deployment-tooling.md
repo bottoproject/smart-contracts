@@ -29,7 +29,10 @@
 - Create: `deployment/package.json`
 - Create: `deployment/hardhat.config.ts`
 - Create: `deployment/lib/artifact.js`
+- Create: `deployment/lib/sources.js`
+- Create: `deployment/scripts/sync-sources.js`
 - Create: `deployment/test/unit/artifact.test.js`
+- Create: `deployment/test/unit/sources.test.js`
 
 **Interfaces:**
 - Produces: `loadReproducibleBuild(rootDir) -> BuildManifest`
@@ -57,7 +60,7 @@ Expected: failure because `deployment/lib/artifact.js` does not exist.
 
 - [ ] **Step 3: Implement the isolated workspace and minimal bytecode gate**
 
-Pin the workspace dependencies exactly and configure Solidity `0.7.6`, optimizer runs `200`, EVM `istanbul`, source path `../contracts`, and workspace-local artifacts/cache. Normalize optional `0x` prefixes before hashing raw bytes.
+Pin the workspace dependencies exactly and configure Solidity `0.7.6`, optimizer runs `200`, EVM `istanbul`, a generated untracked source namespace, and workspace-local artifacts/cache. Normalize optional `0x` prefixes before hashing raw bytes. Require identical executable bytecode after removing only the Solidity CBOR metadata suffix, and retain the complete reproducible Truffle bytecode for the deployment factory.
 
 ```js
 export function sha256Bytecode(bytecode) {
@@ -75,7 +78,7 @@ Expected: Hardhat compilation succeeds under Node 24 and the artifact tests pass
 - [ ] **Step 5: Commit the workspace boundary**
 
 ```bash
-git add package.json package-lock.json deployment/package.json deployment/hardhat.config.ts deployment/lib/artifact.js deployment/test/unit/artifact.test.js
+git add package.json package-lock.json .gitignore deployment/package.json deployment/hardhat.config.ts deployment/lib/artifact.js deployment/lib/sources.js deployment/scripts/sync-sources.js deployment/test/unit/artifact.test.js deployment/test/unit/sources.test.js
 git commit -m "build: add isolated Hardhat 3 deployment workspace"
 ```
 

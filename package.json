@@ -10,13 +10,18 @@
   "author": "BOTTO",
   "license": "MIT",
   "packageManager": "npm@11.6.1",
+  "workspaces": [
+    "deployment"
+  ],
   "scripts": {
     "clean": "node -e \"require('node:fs').rmSync('build/contracts', { recursive: true, force: true })\"",
     "compile": "truffle compile --all",
     "build:reproducible": "npm run clean && npm run compile && node scripts/reproducible-build.js --artifact build/contracts/BottoLiquidityMiningV3.json --output deployments/builds/BottoLiquidityMiningV3.json",
     "test:build": "node --test test/reproducible-build.test.js",
     "test:all": "truffle test --compile-none",
-    "test:v3": "truffle test test/BottoLiquidityMiningV3.test.js --compile-none"
+    "test:v3": "truffle test test/BottoLiquidityMiningV3.test.js --compile-none",
+    "deploy:compile": "npm run compile --workspace=@botto/mainnet-deployment",
+    "test:deploy:unit": "npm run test:unit --workspace=@botto/mainnet-deployment"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.4.0",

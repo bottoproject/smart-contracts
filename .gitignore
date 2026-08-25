@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/deployment/node_modules
 /.pnp
 .pnp.js
 
@@ -12,6 +13,9 @@
 # production
 /build
 /build-contracts
+/deployment/artifacts
+/deployment/cache
+/deployment/project:
 
 # misc
 .DS_Store

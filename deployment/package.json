@@ -1,0 +1,16 @@
+{
+  "name": "@botto/mainnet-deployment",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "compile": "node scripts/sync-sources.js && hardhat compile",
+    "test:unit": "node --test test/unit/*.test.js"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "4.0.15",
+    "@openzeppelin/hardhat-upgrades": "4.1.0",
+    "ethers": "6.17.0",
+    "hardhat": "3.14.0"
+  }
+}
