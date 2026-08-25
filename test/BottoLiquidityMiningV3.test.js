@@ -23,6 +23,7 @@ contract("BottoLiquidityMiningV3", (accounts) => {
   const [owner, staker1, staker2, recipient] = accounts;
   const DAO_TREASURY = "0x35bb964878d7B6ddFA69cF0b97EE63fa3C9d9b49";
   const CLAIM_DEADLINE = toBN("1774915199");
+  const WAD = toBN("1000000000000000000");
   const initialSupply = toBN("21000000000000000000000000");
   const totalRewards = toBN("60000000000000000000000");
   const staker1Stake = toBN("12000000000000");
@@ -57,10 +58,13 @@ contract("BottoLiquidityMiningV3", (accounts) => {
       from: staker2,
     });
     await this.miningProxy.stake(staker1Stake, { from: staker1 });
-    await this.miningProxy.stake(staker2Stake, {
+    const stake2Tx = await this.miningProxy.stake(staker2Stake, {
       from: staker2,
       gas: 500000,
     });
+    this.stake2Timestamp = toBN(
+      (await web3.eth.getBlock(stake2Tx.receipt.blockNumber)).timestamp
+    );
     await time.increase(time.duration.days(1));
 
     this.miningProxy = await upgradeProxy(
@@ -299,7 +303,33 @@ contract("BottoLiquidityMiningV3", (accounts) => {
     expect(result.reward).to.be.bignumber.equal("0");
 
     const tx = await this.miningProxy.withdraw({ from: staker1 });
-    expectEvent(tx, "RewardsForfeited", { staker: staker1 });
+    const firstStakeTime = await this.miningProxy.firstStakeTime();
+    const endTime = await this.miningProxy.endTime();
+    const withdrawTimestamp = toBN(
+      (await web3.eth.getBlock(tx.receipt.blockNumber)).timestamp
+    );
+    const perSecondReward = totalRewards.div(endTime.sub(firstStakeTime));
+    const expectedForfeitedReward = staker1Stake
+      .mul(
+        this.stake2Timestamp
+          .sub(firstStakeTime)
+          .mul(perSecondReward)
+          .mul(WAD)
+          .div(staker1Stake)
+          .add(
+            withdrawTimestamp
+              .sub(this.stake2Timestamp)
+              .mul(perSecondReward)
+              .mul(WAD)
+              .div(staker1Stake.add(staker2Stake))
+          )
+      )
+      .div(WAD);
+
+    expectEvent(tx, "RewardsForfeited", {
+      staker: staker1,
+      amount: expectedForfeitedReward,
+    });
     expectEvent(tx, "Withdraw", {
       staker: staker1,
       bottoEthOut: staker1Stake,
