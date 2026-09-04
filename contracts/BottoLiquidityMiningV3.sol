@@ -1,80 +1,116 @@
 // SPDX-License-Identifier: MIT
+
 pragma solidity >=0.6.0 <0.8.0;
 
 import "./BottoLiquidityMiningV2.sol";
 
-
+/// @title Botto liquidity mining BIP-86 recovery upgrade
+/// @notice Expires BOTTO reward claims while preserving stakers' LP principal.
 contract BottoLiquidityMiningV3 is BottoLiquidityMiningV2 {
     using SafeMath for uint256;
     using TransferHelper for address;
 
-    event BottoRescued(address indexed to, uint256 amount);
-    event Terminated(uint256 releasedRewards, uint256 reservedDueRewards);
+    uint256 public constant CLAIM_DEADLINE = 1774915199;
+    address public constant DAO_TREASURY =
+        0x35bb964878d7B6ddFA69cF0b97EE63fa3C9d9b49;
+
+    event UnclaimedRewardsRecovered(
+        address indexed treasury,
+        uint256 amount
+    );
+    event RewardsForfeited(address indexed staker, uint256 amount);
+
+    function _claimDeadline() internal view virtual returns (uint256) {
+        return CLAIM_DEADLINE;
+    }
+
+    function withdraw()
+        public
+        virtual
+        override
+        update
+        nonReentrant
+        returns (uint256 bottoEthOut, uint256 reward)
+    {
+        totalStakers = totalStakers.sub(1);
+
+        uint256 calculatedReward;
+        (bottoEthOut, calculatedReward) = _applyReward(msg.sender);
+
+        if (bottoEthOut > 0) {
+            bottoEth.safeTransfer(msg.sender, bottoEthOut);
+        }
+
+        if (block.timestamp <= _claimDeadline()) {
+            reward = calculatedReward;
+            if (reward > 0) {
+                botto.safeTransfer(msg.sender, reward);
+                userClaimedRewards[msg.sender] = userClaimedRewards[msg.sender]
+                    .add(reward);
+                totalClaimedRewards = totalClaimedRewards.add(reward);
+
+                emit Payout(msg.sender, reward);
+            }
+        } else {
+            reward = 0;
+            emit RewardsForfeited(msg.sender, calculatedReward);
+        }
+
+        emit Withdraw(msg.sender, bottoEthOut);
+    }
+
+    function payout()
+        public
+        virtual
+        override
+        returns (uint256 reward)
+    {
+        require(
+            block.timestamp <= _claimDeadline(),
+            "LiquidityMiningV3::payout: claim period expired"
+        );
+
+        return super.payout();
+    }
+
+    /// @notice Sends all expired BOTTO rewards to the BIP-86 treasury.
+    function recoverUnclaimedRewards() public onlyOwner nonReentrant {
+        require(
+            block.timestamp > _claimDeadline(),
+            "LiquidityMiningV3::recoverUnclaimedRewards: claim period active"
+        );
+
+        uint256 amount = IERC20(botto).balanceOf(address(this));
+        require(
+            amount > 0,
+            "LiquidityMiningV3::recoverUnclaimedRewards: no BOTTO to recover"
+        );
+
+        botto.safeTransfer(DAO_TREASURY, amount);
+
+        emit UnclaimedRewardsRecovered(DAO_TREASURY, amount);
+    }
 
     function rescueTokens(
         address tokenToRescue,
         address to,
         uint256 amount
     ) public virtual override onlyOwner nonReentrant {
+        require(
+            tokenToRescue != botto,
+            "LiquidityMiningV3::rescueTokens: use recoverUnclaimedRewards"
+        );
+
         if (tokenToRescue == bottoEth) {
             require(
                 amount <=
-                    IERC20(bottoEth).balanceOf(address(this)).sub(totalStake()),
+                    IERC20(bottoEth).balanceOf(address(this)).sub(
+                        totalStake()
+                    ),
                 "LiquidityMiningV3::rescueTokens: that BottoEth belongs to stakers"
             );
-        } else if (tokenToRescue == botto) {
-            uint256 reserved = totalDepositRewards().sub(totalClaimedRewards);
-            require(
-                amount <=
-                    IERC20(botto).balanceOf(address(this)).sub(reserved),
-                "LiquidityMiningV3::rescueTokens: that BOTTO belongs to stakers"
-            );
-            emit BottoRescued(to, amount);
         }
 
         tokenToRescue.safeTransfer(to, amount);
-    }
-
-    
-    function terminate() public virtual update onlyOwner nonReentrant {
-        require(
-            startTime != 0,
-            "LiquidityMiningV3::terminate: no deposit received"
-        );
-
-        if (firstStakeTime != 0) {
-            if (block.timestamp < endTime) {
-                // Program still running: crystallize earned-so-far, keep the
-                // not-yet-earned remainder in `totalRewards` to be released.
-                uint256 perSecondReward = totalRewards.div(
-                    endTime.sub(firstStakeTime)
-                );
-                uint256 sinceFirstStakeTime = block.timestamp.sub(
-                    firstStakeTime
-                );
-                uint256 dueRewards = sinceFirstStakeTime.mul(perSecondReward);
-
-                // Never crystallize more than the remaining budget.
-                if (dueRewards > totalRewards) {
-                    dueRewards = totalRewards;
-                }
-
-                totalDueRewards = totalDueRewards.add(dueRewards);
-                totalRewards = totalRewards.sub(dueRewards);
-            } else {
-                // Program already ended: the entire remaining budget has been
-                // emitted, so it is all earned and must stay reserved.
-                totalDueRewards = totalDueRewards.add(totalRewards);
-                totalRewards = 0;
-            }
-        }
-        // If firstStakeTime == 0 nobody ever staked, so nothing was earned and
-        // the whole of `totalRewards` is unearned and released below.
-
-        uint256 released = totalRewards;
-        totalRewards = 0;
-        endTime = block.timestamp;
-
-        emit Terminated(released, totalDueRewards);
     }
 }

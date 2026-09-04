@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "contract": "BottoLiquidityMiningV3",
+  "toolchain": {
+    "node": "24.10.0",
+    "npm": "11.6.1",
+    "truffle": "5.11.5",
+    "solc": "0.7.6+commit.7338295f.Emscripten.clang",
+    "solcJsSha256": "b94e69dfb056b3e26080f805ab43b668afbc0ac70bf124bfb7391ecfc0172ad2"
+  },
+  "compilerSettings": {
+    "compilationTarget": {
+      "project:/contracts/BottoLiquidityMiningV3.sol": "BottoLiquidityMiningV3"
+    },
+    "evmVersion": "istanbul",
+    "libraries": {},
+    "metadata": {
+      "bytecodeHash": "ipfs"
+    },
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "remappings": []
+  },
+  "bytecode": {
+    "creationBytes": 9811,
+    "creationSha256": "d672d770eff1d75fa7ab908bc5008d14787907164c0573e95b7d300010cf3f56",
+    "deployedBytes": 9779,
+    "deployedSha256": "4ada368867c23f8f4845d5d7b338333cd162f787a591553da34f77653df06014"
+  }
+}

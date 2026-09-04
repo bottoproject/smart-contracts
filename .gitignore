@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/deployment/node_modules
 /.pnp
 .pnp.js
 
@@ -12,6 +13,11 @@
 # production
 /build
 /build-contracts
+/deployments/runtime
+/deployment/artifacts
+/deployment/cache
+/deployment/.openzeppelin
+/deployment/project:
 
 # misc
 .DS_Store

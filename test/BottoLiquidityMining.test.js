@@ -5,6 +5,7 @@ const {
   time,
 } = require("@openzeppelin/test-helpers");
 const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const { LEGACY_UPGRADE_OPTIONS } = require("./helpers/legacy-upgrades");
 const { toBN } = web3.utils;
 
 const BOTTO = artifacts.require("BOTTO");
@@ -23,15 +24,18 @@ contract("BottoLiquidityMining", (accounts, network) => {
   const totalRewards = toBN("60000000000000000000000");
   const stakingDuration = time.duration.years(1);
   const rewardPerSecond = totalRewards.div(stakingDuration);
+  // Ganache can estimate before the timestamp-induced zero-to-nonzero SSTORE.
+  const deterministicStakeGas = 500000;
 
   beforeEach(async function () {
     this.botto = await BOTTO.new("Botto", "BOTTO", initialSupply);
     this.bottoEth = await MockERC20.new("BottoEth", "BOTTOETH");
     await this.bottoEth.mint(owner, initialBottoEthSupply);
-    this.miningProxy = await deployProxy(BottoLiquidityMining, [
-      this.bottoEth.address,
-      this.botto.address,
-    ]);
+    this.miningProxy = await deployProxy(
+      BottoLiquidityMining,
+      [this.bottoEth.address, this.botto.address],
+      LEGACY_UPGRADE_OPTIONS
+    );
   });
 
   it("has expected BottoEth address", async function () {
@@ -149,7 +153,10 @@ contract("BottoLiquidityMining", (accounts, network) => {
             { from: staker2 }
           );
           tx1 = await this.miningProxy.stake(staker1Initial, { from: staker1 });
-          tx2 = await this.miningProxy.stake(staker2Initial, { from: staker2 });
+          tx2 = await this.miningProxy.stake(staker2Initial, {
+            from: staker2,
+            gas: deterministicStakeGas,
+          });
         });
 
         it("emits Stake events", async function () {
@@ -202,6 +209,9 @@ contract("BottoLiquidityMining", (accounts, network) => {
             await time.increaseTo(start.add(stakingHalfPeriod));
             reward1 = await this.miningProxy.payout.call({ from: staker1 });
             tx = await this.miningProxy.payout({ from: staker1 });
+            this.paidReward1 = tx.logs.find(
+              ({ event }) => event === "Payout"
+            ).args.reward;
           });
 
           it("has expected reward", async function () {
@@ -211,6 +221,10 @@ contract("BottoLiquidityMining", (accounts, network) => {
               .mul(staker1Initial)
               .div(totalStakeForPeriod);
             expect(reward1).to.be.bignumber.closeTo(
+              expectedReward,
+              expectedReward.div(toBN("100000"))
+            );
+            expect(this.paidReward1).to.be.bignumber.closeTo(
               expectedReward,
               expectedReward.div(toBN("100000"))
             );
@@ -225,12 +239,12 @@ contract("BottoLiquidityMining", (accounts, network) => {
           it("contract has staker1 claimed rewards", async function () {
             expect(
               await this.miningProxy.userClaimedRewards(staker1)
-            ).to.be.bignumber.equal(reward1);
+            ).to.be.bignumber.equal(this.paidReward1);
           });
 
           it("staker1 has expected BOTTO rewards", async function () {
             expect(await this.botto.balanceOf(staker1)).to.be.bignumber.equal(
-              reward1
+              this.paidReward1
             );
           });
 
@@ -271,6 +285,9 @@ contract("BottoLiquidityMining", (accounts, network) => {
                   await this.miningProxy.withdraw.call({ from: staker2 })
                 ).reward;
                 tx = await this.miningProxy.withdraw({ from: staker2 });
+                this.paidReward = tx.logs.find(
+                  ({ event }) => event === "Payout"
+                ).args.reward;
               });
 
               it("has expected reward", async function () {
@@ -280,6 +297,10 @@ contract("BottoLiquidityMining", (accounts, network) => {
                   .mul(staker2Initial)
                   .div(totalStakeForPeriod);
                 expect(reward).to.be.bignumber.closeTo(
+                  expectedReward,
+                  expectedReward.div(toBN("100000"))
+                );
+                expect(this.paidReward).to.be.bignumber.closeTo(
                   expectedReward,
                   expectedReward.div(toBN("100000"))
                 );
@@ -298,7 +319,7 @@ contract("BottoLiquidityMining", (accounts, network) => {
               it("contract has staker2 claimed rewards", async function () {
                 expect(
                   await this.miningProxy.userClaimedRewards(staker2)
-                ).to.be.bignumber.equal(reward);
+                ).to.be.bignumber.equal(this.paidReward);
               });
 
               it("has one total staker", async function () {
@@ -310,7 +331,7 @@ contract("BottoLiquidityMining", (accounts, network) => {
               it("staker2 has expected BOTTO rewards", async function () {
                 expect(
                   await this.botto.balanceOf(staker2)
-                ).to.be.bignumber.equal(reward);
+                ).to.be.bignumber.equal(this.paidReward);
               });
 
               it("staker2 has expected BottoEth balance", async function () {
@@ -325,6 +346,9 @@ contract("BottoLiquidityMining", (accounts, network) => {
                     await this.miningProxy.withdraw.call({ from: staker1 })
                   ).reward;
                   tx = await this.miningProxy.withdraw({ from: staker1 });
+                  this.paidReward2 = tx.logs.find(
+                    ({ event }) => event === "Payout"
+                  ).args.reward;
                 });
 
                 it("has expected reward", async function () {
@@ -334,6 +358,10 @@ contract("BottoLiquidityMining", (accounts, network) => {
                     .mul(staker1Initial)
                     .div(totalStakeForPeriod);
                   expect(reward2).to.be.bignumber.closeTo(
+                    expectedReward,
+                    expectedReward.div(toBN("100000"))
+                  );
+                  expect(this.paidReward2).to.be.bignumber.closeTo(
                     expectedReward,
                     expectedReward.div(toBN("100000"))
                   );
@@ -352,7 +380,9 @@ contract("BottoLiquidityMining", (accounts, network) => {
                 it("staker1 has expected BOTTO rewards", async function () {
                   expect(
                     await this.botto.balanceOf(staker1)
-                  ).to.be.bignumber.equal(reward1.add(reward2));
+                  ).to.be.bignumber.equal(
+                    this.paidReward1.add(this.paidReward2)
+                  );
                 });
 
                 it("staker1 has expected BottoEth balance", async function () {
@@ -390,7 +420,8 @@ contract("BottoLiquidityMining", (accounts, network) => {
         // the upgrade function doesn't change the deployed implementation address on each iteration
         this.miningProxy = await upgradeProxy(
           this.miningProxy.address,
-          MockBottoLiquidityMining02
+          MockBottoLiquidityMining02,
+          LEGACY_UPGRADE_OPTIONS
         );
       });
 

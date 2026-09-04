@@ -1,6 +1,7 @@
 const { expect } = require("chai");
 const { expectEvent, expectRevert } = require("@openzeppelin/test-helpers");
 const { deployProxy, upgradeProxy } = require("@openzeppelin/truffle-upgrades");
+const { LEGACY_UPGRADE_OPTIONS } = require("./helpers/legacy-upgrades");
 const { toBN } = web3.utils;
 const { getBalance } = web3.eth;
 
@@ -26,7 +27,11 @@ contract("BottoRewardDistributor", (accounts, network) => {
   );
 
   beforeEach(async function () {
-    this.distributorProxy = await deployProxy(BottoRewardDistributor, []);
+    this.distributorProxy = await deployProxy(
+      BottoRewardDistributor,
+      [],
+      LEGACY_UPGRADE_OPTIONS
+    );
   });
 
   it("has no ETH balance", async function () {
@@ -180,7 +185,8 @@ contract("BottoRewardDistributor", (accounts, network) => {
         // the upgrade function doesn't change the deployed implementation address on each iteration
         this.distributorProxy = await upgradeProxy(
           this.distributorProxy.address,
-          MockBottoRewardDistributor02
+          MockBottoRewardDistributor02,
+          LEGACY_UPGRADE_OPTIONS
         );
       });
 

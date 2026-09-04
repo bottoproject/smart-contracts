@@ -1,5 +1,6 @@
 require("dotenv").config({ path: "./.env.local" });
 const HDWalletProvider = require("@truffle/hdwallet-provider");
+const localSolc = require.resolve("solc/soljson.js");
 
 module.exports = {
   networks: {
@@ -42,7 +43,7 @@ module.exports = {
   mocha: {},
   compilers: {
     solc: {
-      version: "0.7.6",
+      version: localSolc,
       settings: {
         optimizer: {
           enabled: true,

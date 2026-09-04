@@ -9,6 +9,26 @@
   },
   "author": "BOTTO",
   "license": "MIT",
+  "packageManager": "npm@11.6.1",
+  "workspaces": [
+    "deployment"
+  ],
+  "scripts": {
+    "clean": "node -e \"require('node:fs').rmSync('build/contracts', { recursive: true, force: true })\"",
+    "compile": "truffle compile --all",
+    "build:reproducible": "npm run clean && npm run compile && node scripts/reproducible-build.js --artifact build/contracts/BottoLiquidityMiningV3.json --output deployments/builds/BottoLiquidityMiningV3.json",
+    "test:build": "node --test test/reproducible-build.test.js",
+    "test:all": "truffle test --compile-none",
+    "test:v3": "truffle test test/BottoLiquidityMiningV3.test.js --compile-none",
+    "deploy:compile": "npm run compile --workspace=@botto/mainnet-deployment",
+    "deploy:inspect": "npm run inspect --workspace=@botto/mainnet-deployment",
+    "deploy:prepare": "npm run deploy-implementation --workspace=@botto/mainnet-deployment",
+    "deploy:propose": "npm run propose --workspace=@botto/mainnet-deployment",
+    "deploy:verify": "npm run verify --workspace=@botto/mainnet-deployment",
+    "deploy:recover-proposal": "npm run recover-proposal --workspace=@botto/mainnet-deployment",
+    "test:deploy:unit": "npm run test:unit --workspace=@botto/mainnet-deployment",
+    "test:deploy:fork": "npm run test:fork --workspace=@botto/mainnet-deployment"
+  },
   "devDependencies": {
     "@openzeppelin/contracts": "^3.4.0",
     "@openzeppelin/contracts-upgradeable": "^3.4.0",
@@ -26,11 +46,13 @@
     "merkle-tree-solidity": "^1.0.8",
     "moment": "^2.29.1",
     "prettier": "2.4.1",
-    "truffle": "^5.1.49",
+    "solc": "0.7.6",
+    "truffle": "5.11.5",
     "truffle-plugin-verify": "^0.5.15"
   },
   "engines": {
-    "node": "14.15.4"
+    "node": "24.10.0",
+    "npm": "11.6.1"
   },
   "dependencies": {}
 }

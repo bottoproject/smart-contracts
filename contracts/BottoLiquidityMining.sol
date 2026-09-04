@@ -237,7 +237,7 @@ contract BottoLiquidityMining is
     }
 
     function _applyReward(address account)
-        private
+        internal
         returns (uint256 bottoEthOut, uint256 reward)
     {
         uint256 _totalUserStake = totalUserStake(account);
